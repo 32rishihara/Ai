@@ -20,6 +20,63 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Arrange project files
+        run: |
+          mkdir -p app/src/main/java/com/guardai/app
+          for f in *.java; do
+            if [ -f "$f" ]; then mv "$f" app/src/main/java/com/guardai/app/; fi
+          done
+          if [ -f AndroidManifest.xml ]; then mv AndroidManifest.xml app/src/main/; fi
+          cat > settings.gradle <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "GuardAI"
+          include ':app'
+          EOF
+          cat > build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.5.2' apply false
+          }
+          EOF
+          cat > gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8
+          android.useAndroidX=false
+          android.nonTransitiveRClass=true
+          EOF
+          cat > app/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.guardai.app'
+              compileSdk 34
+              defaultConfig {
+                  applicationId 'com.guardai.app'
+                  minSdk 29
+                  targetSdk 34
+                  versionCode 1
+                  versionName '1.0'
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+          EOF
+          find . -path ./.git -prune -o -type f -print | sort
+
       - name: Build debug APK
         run: gradle assembleDebug --no-daemon
 
